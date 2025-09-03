@@ -1,0 +1,218 @@
+-- RD HUB - Script Completo
+-- Certifique-se de colocar em um LocalScript dentro do StarterPlayerScripts
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- ==========================
+-- Variáveis de layout
+-- ==========================
+local PANEL_WIDTH = 300
+local PANEL_HEIGHT = 200
+local PANEL_RADIUS = 12
+local TITLE_HEIGHT = 30
+local TITLE_FONT_SIZE = 18
+local BTN_WIDTH = 250
+local BTN_HEIGHT = 40
+local BTN_RADIUS = 8
+local BTN_FONT_SIZE = 16
+local BTN_ICON_PAD = 10
+local BTN_Y0 = 50
+local ICON_SIZE = 20
+
+-- ==========================
+-- Função de FPS
+-- ==========================
+local fps = 0
+local frameCount = 0
+local lastTime = tick()
+
+RunService.RenderStepped:Connect(function()
+    frameCount += 1
+    local now = tick()
+    if now - lastTime >= 1 then
+        fps = frameCount
+        frameCount = 0
+        lastTime = now
+    end
+end)
+
+-- ==========================
+-- Função principal: Limpeza do jogo
+-- ==========================
+local function CleanGame()
+    repeat task.wait() until game:IsLoaded()
+    wait(5)
+    
+    -- Limpar Lighting
+    for i, v in pairs(game.Lighting:GetChildren()) do
+        if v:IsA("Sky") or v:IsA("BlurEffect") or v:IsA("BloomEffect") or v:IsA("SunRaysEffect") then
+            v:Destroy()
+        end
+    end
+
+    game.Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+    game.Lighting.Brightness = 1
+    game.Lighting.ClockTime = 14
+    game.Lighting.ColorShift_Bottom = Color3.fromRGB(255, 255, 255)
+    game.Lighting.ColorShift_Top = Color3.fromRGB(255, 255, 255)
+    game.Lighting.ExposureCompensation = 0
+    game.Lighting.FogColor = Color3.fromRGB(255, 255, 255)
+    game.Lighting.FogEnd = 999999999
+    game.Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+    game.Lighting.GlobalShadows = true
+
+    -- Remover texturas de todos os objetos
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("Texture") or obj:IsA("Decal") then
+            obj:Destroy()
+        end
+    end
+
+    -- Manter alterações caso algo novo seja adicionado
+    game.Lighting.DescendantAdded:Connect(function(obj)
+        if obj:IsA("Sky") or obj:IsA("BlurEffect") or obj:IsA("BloomEffect") or obj:IsA("SunRaysEffect") then
+            obj:Destroy()
+        end
+    end)
+end
+
+-- ==========================
+-- Tela de Loading
+-- ==========================
+local loadingGui = Instance.new("ScreenGui")
+loadingGui.Name = "RDLoading"
+loadingGui.Parent = playerGui
+
+local blackFrame = Instance.new("Frame")
+blackFrame.Size = UDim2.new(1,0,1,0)
+blackFrame.Position = UDim2.new(0,0,0,0)
+blackFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+blackFrame.Parent = loadingGui
+
+local loadingText = Instance.new("TextLabel")
+loadingText.Size = UDim2.new(0,300,0,50)
+loadingText.Position = UDim2.new(0.5,-150,0.5,-25)
+loadingText.BackgroundTransparency = 1
+loadingText.TextColor3 = Color3.fromRGB(255,255,255)
+loadingText.Font = Enum.Font.GothamBold
+loadingText.TextSize = 24
+loadingText.Text = "Carregando 0%"
+loadingText.Parent = blackFrame
+
+for i = 1, 100 do
+    loadingText.Text = "Carregando "..i.."%"
+    task.wait(0.02)
+end
+
+loadingText.Text = "Script ON"
+task.wait(1)
+loadingGui:Destroy()
+
+-- ==========================
+-- Painel RD HUB
+-- ==========================
+local gui = Instance.new("ScreenGui")
+gui.Name = "RDHUBPanel"
+gui.ResetOnSpawn = false
+gui.Parent = playerGui
+
+local main = Instance.new("Frame", gui)
+main.Name = "MainPanel"
+main.Size = UDim2.new(0, PANEL_WIDTH, 0, PANEL_HEIGHT)
+main.Position = UDim2.new(0.5, -PANEL_WIDTH/2, 0.5, -PANEL_HEIGHT/2)
+main.BackgroundColor3 = Color3.fromRGB(13,13,13)
+main.BorderSizePixel = 0
+main.Active = true
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, PANEL_RADIUS)
+
+-- Drag system
+do
+    local dragging, dragInput, dragStart, startPos
+    main.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = main.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    main.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input == dragInput then
+            local delta = input.Position - dragStart
+            main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+-- Título
+local title = Instance.new("TextLabel", main)
+title.Name = "Title"
+title.Size = UDim2.new(1, 0, 0, TITLE_HEIGHT)
+title.Position = UDim2.new(0,0,0,0)
+title.Text = "RD HUB"
+title.Font = Enum.Font.GothamBlack
+title.TextSize = TITLE_FONT_SIZE
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.TextStrokeTransparency = 0.08
+title.TextStrokeColor3 = Color3.fromRGB(220,220,220)
+
+-- Contador FPS
+local fpsLabel = Instance.new("TextLabel", main)
+fpsLabel.Size = UDim2.new(0, 100, 0, 20)
+fpsLabel.Position = UDim2.new(1,-110,0,10)
+fpsLabel.BackgroundTransparency = 1
+fpsLabel.TextColor3 = Color3.fromRGB(0,255,0)
+fpsLabel.Font = Enum.Font.GothamBold
+fpsLabel.TextSize = 16
+fpsLabel.Text = "FPS: 0"
+
+RunService.RenderStepped:Connect(function()
+    fpsLabel.Text = "FPS: "..fps
+end)
+
+-- Função de botão toggle
+local function createToggleBtn(parent, label, y, callback)
+    local btn = Instance.new("TextButton", parent)
+    btn.Size = UDim2.new(0, BTN_WIDTH, 0, BTN_HEIGHT)
+    btn.Position = UDim2.new(0, (PANEL_WIDTH-BTN_WIDTH)/2, 0, y)
+    btn.BackgroundColor3 = Color3.fromRGB(28,28,28)
+    btn.Text = label
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = BTN_FONT_SIZE
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.BorderSizePixel = 0
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, BTN_RADIUS)
+
+    local state = false
+    local function updateVisual()
+        btn.BackgroundColor3 = state and Color3.fromRGB(38,38,38) or Color3.fromRGB(28,28,28)
+    end
+
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        callback(state)
+        updateVisual()
+    end)
+
+    updateVisual()
+    return btn
+end
+
+-- Botão RD HUB
+createToggleBtn(main, "Ativar RD HUB", BTN_Y0, function(on)
+    if on then
+        CleanGame()
+    end
+end)
